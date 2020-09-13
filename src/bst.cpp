@@ -25,6 +25,12 @@ public:
     }
     //插入数据
     bool Insert(const K &key, const V &value);
+
+    //查找
+    AVLTreeNode<K, V> *search(const K &key);
+
+    //删除
+    bool remove(const K &key);
     //中序遍历
     void InOrder()
     {
@@ -154,6 +160,130 @@ bool AVLTree<K, V>::Insert(const K &key, const V &value)
     }
 }
 
+template <class K, class V>
+bool AVLTree<K, V>::remove(const K &key)
+{
+    if (_root == NULL)
+        return false;
+    // AVLTreeNode<K, V> *parent = NULL;
+    AVLTreeNode<K, V> *cur = this->search(K);
+    if (cur == NULL)
+        return false;
+    AVLTreeNode<K, V> *parent = cur->_parent;
+    if (cur->_left != NULL && cur->right != NULL)
+    {
+        AVLTreeNode<K, V> *temp = cur->_left;
+        while (temp->_right != NULL)
+            temp = temp->_right;
+        AVLTreeNode<K, V> tempSwap = *temp;
+        *temp = *cur;
+        *cur = tempSwap;
+        AVLTreeNode<K, V> *parent;
+        parent = temp->_parent;
+        temp->_left->_parent = parent;
+        if (parent->_left == temp)
+        {
+            parent->_left = temp->_left;
+            cur = parent->_left;
+        }
+        else
+        {
+            cur = parent->_right = temp->_left;
+            delete[] cur;
+            cur = cur = parent->_right;
+        }
+    }
+    else if (cur->_left == NULL && cur->right != NULL)
+    {
+        cur->_right->_parent = parent;
+        if (parent->_left == cur)
+        {
+            cur = parent->_left = cur->_right;
+        }
+        else
+            cur = parent->_right = cur->_right;
+    }
+    else if (cur->_left != NULL && cur->right == NULL)
+    {
+        cur->_left->_parent = parent;
+        if (parent->_left == cur)
+            cur = parent->_left = cur->_left;
+        else
+            cur = parent->_right = cur->_left;
+    }
+    else
+    {
+    }
+    while (parent)
+    {
+        //更新平衡因子
+        if (cur == parent->_left)
+            parent->_bf--;
+        else if (cur == parent->_right)
+            parent->_bf++;
+
+        //检验平衡因子是否合法
+        if (parent->_bf == 0)
+            break;
+        else if (parent->_bf == -1 || parent->_bf == 1)
+        { // 回溯上升 更新祖父节点的平衡因子并检验合法性
+            cur = parent;
+            parent = cur->_parent;
+        }
+        //	2 -2 平衡因子不合法 需要进行旋转 降低高度
+        else
+        {
+            if (parent->_bf == -2)
+            {
+                if (cur->_bf == -1)
+                    _RotateRR(parent);
+                else
+                    _RotateLR(parent);
+            }
+            else if (parent->_bf == 2)
+            {
+                if (cur->_bf == 1)
+                    _RotateLL(parent);
+                else
+                    _RotateRL(parent);
+            }
+            break;
+        }
+    }
+}
+
+template <class K, class V>
+AVLTreeNode<K, V> *AVLTree<K, V>::search(const K &key)
+{
+    if (_root == NULL)
+        return NULL;
+
+    AVLTreeNode<K, V> *parent = NULL;
+    AVLTreeNode<K, V> *cur = _root;
+    while (cur)
+    {
+        if (cur->_key < key)
+        {
+            parent = cur;
+            cur = cur->_right;
+        }
+        else if (cur->_key > key)
+        {
+            parent = cur;
+            cur = cur->_left;
+        }
+        else
+        {
+            break;
+        }
+    }
+    if (cur == NULL)
+    {
+        return NULL;
+    }
+    else
+        return cur;
+}
 //左改组LL型
 template <class K, class V>
 void AVLTree<K, V>::_RotateLL(AVLTreeNode<K, V> *&parent)
